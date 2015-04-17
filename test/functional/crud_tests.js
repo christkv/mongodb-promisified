@@ -68,15 +68,16 @@ exports['Should correctly connect perform cursor stream'] = {
     co(function*() {
       // Connect to the database
       var client = yield MongoClient.connect('mongodb://localhost:27017/db');
+      try { yield yield client.collection('test1').drop(); } catch(err) {}
       // Insert a document
       var result = yield client.collection('test1').insertOne({a:1});
       // Get the documents
-      var rawCursor = yield client.collection('test1').find({}).object;
-      // rawCursor.on('data', function(data) {});
-      // rawCursor.on('end', function() {
-      //   // Close the connection
-      //   client.close();
-      // });
+      var rawCursor = client.collection('test1').find({}).object;
+      rawCursor.on('data', function(data) {});
+      rawCursor.on('end', function() {
+        client.close();
+        test.done();
+      });
     }).catch(function(err) {
       console.log(err.stack);
     });

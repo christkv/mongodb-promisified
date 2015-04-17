@@ -51,11 +51,22 @@ module.exports = function(promise) {
   var chainable = function(target, overrideFields) {
     overrideFields.map(function(_name) {
       target[_name] = function() {
-        var self = this;
         var args = Array.prototype.slice.call(arguments, 0);
-        // Set up the target
-        self.object[_name].apply(self.object, args);
-        return self;
+        this.object[_name].apply(this.object, args);
+        return this;
+      }
+    });
+  }
+
+  var eventMapper = function(target) {
+    var events = ['on', 'once', 'addListener', 'removeListener'
+      , 'removeAllListeners', 'setMaxListeners', 'listeners'
+      , 'emit'];
+
+    events.map(function(name) {
+      target[events[name]] = function() {
+        var args = Array.prototype.slice.call(arguments, 0);
+        this.object[name].apply(this.object, args);
       }
     });
   }
@@ -130,6 +141,8 @@ module.exports = function(promise) {
     });
   }
 
+  eventMapper(CommandCursor.prototype)
+
   /*
    * AggregateCursor wrapper class
    */
@@ -159,6 +172,7 @@ module.exports = function(promise) {
     });
   }
 
+  eventMapper(AggregateCursor.prototype);
   chainable(AggregateCursor.prototype, ['batchSize', 'geoNear', 'group'
     , 'limit', 'match', 'maxTimeMS', 'out'
     , 'project', 'redact', 'skip', 'sort', 'unwind'
@@ -172,6 +186,7 @@ module.exports = function(promise) {
   }
 
   // Promisify
+  eventMapper(Db.prototype);
   promisify(Db.prototype, D.prototype, [
       'close', 'command', 'createCollection', 'stats', 'eval', 'renameCollection'
     , 'dropCollection', 'dropDatabase', 'collections', 'executeDbAdminCommand'
@@ -199,6 +214,7 @@ module.exports = function(promise) {
   }
 
   // Promisify
+  eventMapper(Cursor.prototype);
   promisify(Cursor.prototype, Cr.prototype, ['toArray', 'next'], []);
   chainable(Cursor.prototype, [
       'filter', 'addCursorFlag', 'addQueryModifier'
