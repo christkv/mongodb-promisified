@@ -72,7 +72,7 @@ exports['Should correctly connect perform cursor stream'] = {
       // Insert a document
       var result = yield client.collection('test1').insertOne({a:1});
       // Get the documents
-      var rawCursor = client.collection('test1').find({}).object;
+      var rawCursor = client.collection('test1').find({});
       rawCursor.on('data', function(data) {});
       rawCursor.on('end', function() {
         client.close();

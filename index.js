@@ -63,8 +63,8 @@ module.exports = function(promise) {
       , 'removeAllListeners', 'setMaxListeners', 'listeners'
       , 'emit'];
 
-    events.map(function(name) {
-      target[events[name]] = function() {
+    events.forEach(function(name) {
+      target[name] = function() {
         var args = Array.prototype.slice.call(arguments, 0);
         this.object[name].apply(this.object, args);
       }

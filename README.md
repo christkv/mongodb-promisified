@@ -30,30 +30,6 @@ var co = require('co')
   , MongoClient = require('mongodb-promisified')(Promise).MongoClient;
 ```
 
-## Not supported
-
-Streams are not supported in this wrapper if you need a stream from a cursor you can access it by doing the following.
-
-```js
-var co = require('co')
-  , MongoClient = require('mongodb-promisified')().MongoClient;
-
-co(function*() {
-  // Connect to the database
-  var client = yield MongoClient.connect('mongodb://localhost:27017/db');
-  // Insert a document
-  var result = yield client.collection('test1').insertOne({a:1});
-  // Get the documents
-  var rawCursor = yield client.collection('test1').find({}).object;
-  rawCursor.on('data', function(data) {});
-  rawCursor.on('end', function() {
-    client.close();
-  });
-}).catch(function(err) {
-  console.log(err.stack);
-});
-```
-
 ## Supported functions
 
 The promisified wrapper supports most of the functionality of the 2.0 drivers but not all of it.
