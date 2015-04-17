@@ -18,6 +18,7 @@
     "optimist": "^0.6.1",
     "mongodb-tools": "^1.0.1",
     "co": "^4.5.1",
-    "mongodb-core": "^1.1.23"
+    "mongodb-core": "^1.1.23",
+    "bluebird": "^2.9.24"
   }
 }
