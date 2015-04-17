@@ -173,7 +173,9 @@ module.exports = function(promise) {
 
   // Promisify
   promisify(Db.prototype, D.prototype, [
-    'close', 'command', 'createCollection', 'stats'
+      'close', 'command', 'createCollection', 'stats', 'eval', 'renameCollection'
+    , 'dropCollection', 'dropDatabase', 'collections', 'executeDbAdminCommand'
+    , 'addUser', 'removeUser', 'authenticate', 'logout'
   ]);
 
   Db.prototype.collection = function(name) {
@@ -185,6 +187,10 @@ module.exports = function(promise) {
     return new CommandCursor(this.object.listCollections.apply(this.object, args));
   }
 
+  Db.prototype.db = function(dbName) {
+    return new Db(this.object.db(dbName));
+  }
+
   /*
    * Cursor wrapper class
    */
@@ -193,7 +199,7 @@ module.exports = function(promise) {
   }
 
   // Promisify
-  promisify(Cursor.prototype, Cr.prototype, ['toArray'], []);
+  promisify(Cursor.prototype, Cr.prototype, ['toArray', 'next'], []);
   chainable(Cursor.prototype, [
       'filter', 'addCursorFlag', 'addQueryModifier'
     , 'comment', 'maxTimeMS', 'maxTimeMs'
