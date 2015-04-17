@@ -7,7 +7,7 @@ exports['Should correctly connect using co'] = {
 
   // The actual test we wish to run
   test: function(configuration, test) {
-    var MongoClient = require('../..').MongoClient;
+    var MongoClient = require('../..')().MongoClient;
 
     co(function*(){
       // Connect using mongoclient
@@ -36,7 +36,7 @@ exports['Should correctly connect perform cursor toArray'] = {
 
   // The actual test we wish to run
   test: function(configuration, test) {
-    var MongoClient = require('../..').MongoClient;
+    var MongoClient = require('../..')().MongoClient;
 
     co(function*(){
       // Connect using mongoclient

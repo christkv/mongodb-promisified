@@ -7,7 +7,7 @@ exports['Should correctly execute insertOne'] = {
 
   // The actual test we wish to run
   test: function(configuration, test) {
-    var MongoClient = require('../..').MongoClient;
+    var MongoClient = require('../..')().MongoClient;
 
     co(function*(){
       var client = yield MongoClient.connect('mongodb://localhost:27017/test');

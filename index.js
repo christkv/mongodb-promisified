@@ -4,208 +4,218 @@ var m = require('mongodb')
   , Cr = m.Cursor
   , M = m.MongoClient;
 
-var promisify = function(target, original, overrideFields) {
-  // Ensure we have some fields
-  overrideFields = overrideFields || [];
-  // Map the prototype functions
-  for(var name in original) {
-    if(overrideFields.indexOf(name) == -1) {
-      continue;
-    }
+//
+// Exports a promise library, let's you pass your own promise library
+module.exports = function(promise) {
+  promise = promise || Promise;
 
-    try {
-      // Do we have a function ?
-      if(typeof original[name] == 'function') {
-        var func = original[name];
-
-        // Map the function
-        var mapFunction = function(_name) {
-          target[_name] = function() {
-            var self = this;
-            var args = Array.prototype.slice.call(arguments, 0);
-            
-            return new Promise(function(resolve, reject) {
-              args.push(function(err, r) {
-                if(err) return reject(err);
-                resolve(r);
-              });
-
-              self.object[_name].apply(self.object, args)
-            });
-          }
-        }
-
-        mapFunction(name);
+  var promisify = function(target, original, overrideFields) {
+    // Ensure we have some fields
+    overrideFields = overrideFields || [];
+    // Map the prototype functions
+    for(var name in original) {
+      if(overrideFields.indexOf(name) == -1) {
+        continue;
       }
-    } catch(err) {
-      // Catch any attempt to access getters
+
+      try {
+        // Do we have a function ?
+        if(typeof original[name] == 'function') {
+          var func = original[name];
+
+          // Map the function
+          var mapFunction = function(_name) {
+            target[_name] = function() {
+              var self = this;
+              var args = Array.prototype.slice.call(arguments, 0);
+              
+              return new promise(function(resolve, reject) {
+                args.push(function(err, r) {
+                  if(err) return reject(err);
+                  resolve(r);
+                });
+
+                self.object[_name].apply(self.object, args)
+              });
+            }
+          }
+
+          mapFunction(name);
+        }
+      } catch(err) {
+        // Catch any attempt to access getters
+      }
     }
   }
-}
 
-var chainable = function(target, overrideFields) {
-  overrideFields.map(function(_name) {
-    target[_name] = function() {
-      var self = this;
-      var args = Array.prototype.slice.call(arguments, 0);
-      // Set up the target
-      self.object[_name].apply(self.object, args);
-      return self;
-    }
-  });
-}
-
-/*
- * Collection wrapper class
- */
-var Collection = function(collection) {
-  this.object = collection;
-}
-
-// Promisify
-promisify(Collection.prototype, C.prototype, [
-    'insertOne', 'insertMany', 'bulkWrite'
-  , 'updateOne', 'replaceOne', 'updateMany'
-  , 'deleteOne', 'deleteMany', 'save'
-  , 'findOne', 'rename', 'options'  
-  , 'createIndex', 'createIndexes', 'isCapped'
-  , 'dropIndex', 'dropIndexes'
-  , 'reIndex', 'ensureIndex'
-  , 'indexExists', 'indexInformation', 'indexes'
-  , 'count', 'distinct', 'stats'
-  , 'findOneAndDelete', 'findOneAndReplace'
-  , 'findOneAndUpdate', 'parallelCollectionScan'
-  , 'geoNear', 'geoHaystackSearch', 'group'
-  , 'mapReduce', 'drop'
-]);
-
-Collection.prototype.find = function() {
-  var args = Array.prototype.slice.call(arguments, 0);
-  var cursor = this.object.find.apply(this.object, args);
-  return new Cursor(cursor);
-}
-
-Collection.prototype.aggregate = function() {
-  var args = Array.prototype.slice.call(arguments, 0);
-  var cursor = this.object.aggregate.apply(this.object, args);
-  if(cursor) return new AggregateCursor(cursor);
-}
-
-Collection.prototype.listIndexes = function() {
-  var args = Array.prototype.slice.call(arguments, 0);
-  return new CommandCursor(this.object.listIndexes.apply(this.object, args));
-}
-
-/*
- * CommandCursor wrapper class
- */
-var CommandCursor = function(cursor) {
-  this.object = cursor;  
-}
-
-CommandCursor.prototype.next = function() {
-  var self = this;
-
-  return new Promise(function(resolve, reject) {
-    self.object.next(function(err, doc) {
-      if(err) return reject(err);
-      resolve(doc);
+  var chainable = function(target, overrideFields) {
+    overrideFields.map(function(_name) {
+      target[_name] = function() {
+        var self = this;
+        var args = Array.prototype.slice.call(arguments, 0);
+        // Set up the target
+        self.object[_name].apply(self.object, args);
+        return self;
+      }
     });
-  });
-}
+  }
 
-CommandCursor.prototype.toArray = function() {
-  var self = this;
+  /*
+   * Collection wrapper class
+   */
+  var Collection = function(collection) {
+    this.object = collection;
+  }
 
-  return new Promise(function(resolve, reject) {
-    self.object.toArray(function(err, docs) {
-      if(err) return reject(err);
-      resolve(docs);
+  // Promisify
+  promisify(Collection.prototype, C.prototype, [
+      'insertOne', 'insertMany', 'bulkWrite'
+    , 'updateOne', 'replaceOne', 'updateMany'
+    , 'deleteOne', 'deleteMany', 'save'
+    , 'findOne', 'rename', 'options'  
+    , 'createIndex', 'createIndexes', 'isCapped'
+    , 'dropIndex', 'dropIndexes'
+    , 'reIndex', 'ensureIndex'
+    , 'indexExists', 'indexInformation', 'indexes'
+    , 'count', 'distinct', 'stats'
+    , 'findOneAndDelete', 'findOneAndReplace'
+    , 'findOneAndUpdate', 'parallelCollectionScan'
+    , 'geoNear', 'geoHaystackSearch', 'group'
+    , 'mapReduce', 'drop'
+  ]);
+
+  Collection.prototype.find = function() {
+    var args = Array.prototype.slice.call(arguments, 0);
+    var cursor = this.object.find.apply(this.object, args);
+    return new Cursor(cursor);
+  }
+
+  Collection.prototype.aggregate = function() {
+    var args = Array.prototype.slice.call(arguments, 0);
+    var cursor = this.object.aggregate.apply(this.object, args);
+    if(cursor) return new AggregateCursor(cursor);
+  }
+
+  Collection.prototype.listIndexes = function() {
+    var args = Array.prototype.slice.call(arguments, 0);
+    return new CommandCursor(this.object.listIndexes.apply(this.object, args));
+  }
+
+  /*
+   * CommandCursor wrapper class
+   */
+  var CommandCursor = function(cursor) {
+    this.object = cursor;  
+  }
+
+  CommandCursor.prototype.next = function() {
+    var self = this;
+
+    return new promise(function(resolve, reject) {
+      self.object.next(function(err, doc) {
+        if(err) return reject(err);
+        resolve(doc);
+      });
     });
-  });
-}
+  }
 
-/*
- * AggregateCursor wrapper class
- */
-var AggregateCursor = function(cursor) {
-  this.object = cursor;  
-}
+  CommandCursor.prototype.toArray = function() {
+    var self = this;
 
-AggregateCursor.prototype.next = function() {
-  var self = this;
-
-  return new Promise(function(resolve, reject) {
-    self.object.next(function(err, doc) {
-      if(err) return reject(err);
-      resolve(doc);
+    return new promise(function(resolve, reject) {
+      self.object.toArray(function(err, docs) {
+        if(err) return reject(err);
+        resolve(docs);
+      });
     });
-  });
-}
+  }
 
-AggregateCursor.prototype.toArray = function() {
-  var self = this;
+  /*
+   * AggregateCursor wrapper class
+   */
+  var AggregateCursor = function(cursor) {
+    this.object = cursor;  
+  }
 
-  return new Promise(function(resolve, reject) {
-    self.object.toArray(function(err, docs) {
-      if(err) return reject(err);
-      resolve(docs);
+  AggregateCursor.prototype.next = function() {
+    var self = this;
+
+    return new promise(function(resolve, reject) {
+      self.object.next(function(err, doc) {
+        if(err) return reject(err);
+        resolve(doc);
+      });
     });
-  });
+  }
+
+  AggregateCursor.prototype.toArray = function() {
+    var self = this;
+
+    return new promise(function(resolve, reject) {
+      self.object.toArray(function(err, docs) {
+        if(err) return reject(err);
+        resolve(docs);
+      });
+    });
+  }
+
+  chainable(AggregateCursor.prototype, ['batchSize', 'geoNear', 'group'
+    , 'limit', 'match', 'maxTimeMS', 'out'
+    , 'project', 'redact', 'skip', 'sort', 'unwind'
+  ]);
+
+  /*
+   * DB wrapper class
+   */
+  var Db = function(db) {
+    this.object = db;
+  }
+
+  // Promisify
+  promisify(Db.prototype, D.prototype, [
+    'close', 'command', 'createCollection', 'stats'
+  ]);
+
+  Db.prototype.collection = function(name) {
+    return new Collection(this.object.collection(name));
+  }
+
+  Db.prototype.listCollections = function() {
+    var args = Array.prototype.slice.call(arguments, 0);
+    return new CommandCursor(this.object.listCollections.apply(this.object, args));
+  }
+
+  /*
+   * Cursor wrapper class
+   */
+  var Cursor = function(cursor) {
+    this.object = cursor;
+  }
+
+  // Promisify
+  promisify(Cursor.prototype, Cr.prototype, ['toArray'], []);
+  chainable(Cursor.prototype, [
+      'filter', 'addCursorFlag', 'addQueryModifier'
+    , 'comment', 'maxTimeMS', 'maxTimeMs'
+    , 'project', 'sort', 'batchSize', 'limit', 'skip'
+  ]);
+
+  /*
+   * MongoClient wrapper class
+   */
+  var MongoClient = function() {}
+  MongoClient.connect = function(url, options) {
+    return new promise(function(resolve, reject) {
+      M.connect(url, options, function(err, db) {
+        if(err) return reject(err);
+        resolve(new Db(db));
+      })
+    });
+  }
+
+  // Return the classes
+  return {MongoClient: MongoClient};
 }
 
-chainable(AggregateCursor.prototype, ['batchSize', 'geoNear', 'group'
-  , 'limit', 'match', 'maxTimeMS', 'out'
-  , 'project', 'redact', 'skip', 'sort', 'unwind'
-]);
 
-/*
- * DB wrapper class
- */
-var Db = function(db) {
-  this.object = db;
-}
-
-// Promisify
-promisify(Db.prototype, D.prototype, [
-  'close', 'command', 'createCollection', 'stats'
-]);
-
-Db.prototype.collection = function(name) {
-  return new Collection(this.object.collection(name));
-}
-
-Db.prototype.listCollections = function() {
-  var args = Array.prototype.slice.call(arguments, 0);
-  return new CommandCursor(this.object.listCollections.apply(this.object, args));
-}
-
-/*
- * Cursor wrapper class
- */
-var Cursor = function(cursor) {
-  this.object = cursor;
-}
-
-// Promisify
-promisify(Cursor.prototype, Cr.prototype, ['toArray'], []);
-chainable(Cursor.prototype, [
-    'filter', 'addCursorFlag', 'addQueryModifier'
-  , 'comment', 'maxTimeMS', 'maxTimeMs'
-  , 'project', 'sort', 'batchSize', 'limit', 'skip'
-]);
-
-/*
- * MongoClient wrapper class
- */
-var MongoClient = function() {}
-MongoClient.connect = function(url, options) {
-  return new Promise(function(resolve, reject) {
-    M.connect(url, options, function(err, db) {
-      if(err) return reject(err);
-      resolve(new Db(db));
-    })
-  });
-}
-
-module.exports = {MongoClient: MongoClient};
+// module.exports = {MongoClient: MongoClient};
