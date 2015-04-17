@@ -1,0 +1,23 @@
+{
+  "name": "mongodb-promisified",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "mongodb": "~2.0"
+  },
+  "devDependencies": {
+    "integra": "^0.1.8",
+    "mongodb-version-manager": "^0.7.0",
+    "semver": "^4.3.3",
+    "optimist": "^0.6.1",
+    "mongodb-tools": "^1.0.1",
+    "co": "^4.5.1",
+    "mongodb-core": "^1.1.23"
+  }
+}
