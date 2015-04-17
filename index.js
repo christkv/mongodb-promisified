@@ -1,13 +1,15 @@
 var m = require('mongodb')
   , C = m.Collection
   , D = m.Db
+  , Cr = m.Cursor
   , M = m.MongoClient;
 
-var promisify = function(target, original, ignoreFields) {
-  ignoreFields = ignoreFields || [];
+var promisify = function(target, original, overrideFields) {
+  // Ensure we have some fields
+  overrideFields = overrideFields || [];
   // Map the prototype functions
   for(var name in original) {
-    if(ignoreFields.indexOf(name) != -1) {
+    if(overrideFields.indexOf(name) == -1) {
       continue;
     }
 
@@ -38,7 +40,19 @@ var promisify = function(target, original, ignoreFields) {
     } catch(err) {
       // Catch any attempt to access getters
     }
-  }  
+  }
+}
+
+var chainable = function(target, overrideFields) {
+  overrideFields.map(function(_name) {
+    target[_name] = function() {
+      var self = this;
+      var args = Array.prototype.slice.call(arguments, 0);
+      // Set up the target
+      self.object[_name].apply(self.object, args);
+      return self;
+    }
+  });
 }
 
 /*
@@ -49,7 +63,101 @@ var Collection = function(collection) {
 }
 
 // Promisify
-promisify(Collection.prototype, C.prototype);
+promisify(Collection.prototype, C.prototype, [
+    'insertOne', 'insertMany', 'bulkWrite'
+  , 'updateOne', 'replaceOne', 'updateMany'
+  , 'deleteOne', 'deleteMany', 'save'
+  , 'findOne', 'rename', 'options'  
+  , 'createIndex', 'createIndexes', 'isCapped'
+  , 'dropIndex', 'dropIndexes'
+  , 'reIndex', 'ensureIndex'
+  , 'indexExists', 'indexInformation', 'indexes'
+  , 'count', 'distinct', 'stats'
+  , 'findOneAndDelete', 'findOneAndReplace'
+  , 'findOneAndUpdate', 'parallelCollectionScan'
+  , 'geoNear', 'geoHaystackSearch', 'group'
+  , 'mapReduce', 'drop'
+]);
+
+Collection.prototype.find = function() {
+  var args = Array.prototype.slice.call(arguments, 0);
+  var cursor = this.object.find.apply(this.object, args);
+  return new Cursor(cursor);
+}
+
+Collection.prototype.aggregate = function() {
+  var args = Array.prototype.slice.call(arguments, 0);
+  var cursor = this.object.aggregate.apply(this.object, args);
+  if(cursor) return new AggregateCursor(cursor);
+}
+
+Collection.prototype.listIndexes = function() {
+  var args = Array.prototype.slice.call(arguments, 0);
+  return new CommandCursor(this.object.listIndexes.apply(this.object, args));
+}
+
+/*
+ * CommandCursor wrapper class
+ */
+var CommandCursor = function(cursor) {
+  this.object = cursor;  
+}
+
+CommandCursor.prototype.next = function() {
+  var self = this;
+
+  return new Promise(function(resolve, reject) {
+    self.object.next(function(err, doc) {
+      if(err) return reject(err);
+      resolve(doc);
+    });
+  });
+}
+
+CommandCursor.prototype.toArray = function() {
+  var self = this;
+
+  return new Promise(function(resolve, reject) {
+    self.object.toArray(function(err, docs) {
+      if(err) return reject(err);
+      resolve(docs);
+    });
+  });
+}
+
+/*
+ * AggregateCursor wrapper class
+ */
+var AggregateCursor = function(cursor) {
+  this.object = cursor;  
+}
+
+AggregateCursor.prototype.next = function() {
+  var self = this;
+
+  return new Promise(function(resolve, reject) {
+    self.object.next(function(err, doc) {
+      if(err) return reject(err);
+      resolve(doc);
+    });
+  });
+}
+
+AggregateCursor.prototype.toArray = function() {
+  var self = this;
+
+  return new Promise(function(resolve, reject) {
+    self.object.toArray(function(err, docs) {
+      if(err) return reject(err);
+      resolve(docs);
+    });
+  });
+}
+
+chainable(AggregateCursor.prototype, ['batchSize', 'geoNear', 'group'
+  , 'limit', 'match', 'maxTimeMS', 'out'
+  , 'project', 'redact', 'skip', 'sort', 'unwind'
+]);
 
 /*
  * DB wrapper class
@@ -59,11 +167,33 @@ var Db = function(db) {
 }
 
 // Promisify
-promisify(Db.prototype, D.prototype, ['collection']);
+promisify(Db.prototype, D.prototype, [
+  'close', 'command', 'createCollection', 'stats'
+]);
 
 Db.prototype.collection = function(name) {
   return new Collection(this.object.collection(name));
 }
+
+Db.prototype.listCollections = function() {
+  var args = Array.prototype.slice.call(arguments, 0);
+  return new CommandCursor(this.object.listCollections.apply(this.object, args));
+}
+
+/*
+ * Cursor wrapper class
+ */
+var Cursor = function(cursor) {
+  this.object = cursor;
+}
+
+// Promisify
+promisify(Cursor.prototype, Cr.prototype, ['toArray'], []);
+chainable(Cursor.prototype, [
+    'filter', 'addCursorFlag', 'addQueryModifier'
+  , 'comment', 'maxTimeMS', 'maxTimeMs'
+  , 'project', 'sort', 'batchSize', 'limit', 'skip'
+]);
 
 /*
  * MongoClient wrapper class

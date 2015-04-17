@@ -97,6 +97,9 @@ var runner = new Runner({
 var testFiles =[
     '/test/functional/mongoclient_tests.js'
   , '/test/functional/crud_tests.js'
+  , '/test/functional/aggregate_tests.js'
+  , '/test/functional/index_tests.js'
+  , '/test/functional/db_tests.js'
 ]
 
 // Add all the tests to run
