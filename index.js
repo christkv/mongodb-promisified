@@ -4,6 +4,8 @@ var m = require('mongodb')
   , Cr = m.Cursor
   , M = m.MongoClient;
 
+console.dir(m)
+
 //
 // Exports a promise library, let's you pass your own promise library
 module.exports = function(promise) {
@@ -236,7 +238,22 @@ module.exports = function(promise) {
   }
 
   // Return the classes
-  return {MongoClient: MongoClient};
+  return {
+      MongoClient: MongoClient
+    , ReadPreference: m.ReadPreference
+    , Logger: m.Logger
+    , Binary: m.Binary
+    , Code: m.Code
+    , DBRef: m.DBRef
+    , Double: m.Double
+    , Long: m.Long
+    , MinKey: m.MinKey
+    , MaxKey: m.MaxKey
+    , ObjectId: m.ObjectID
+    , ObjectID: m.ObjectID
+    , Symbol: m.Symbol
+    , Timestamp: m.Timestamp
+  };
 }
 
 

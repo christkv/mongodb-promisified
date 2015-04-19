@@ -30,6 +30,10 @@ var co = require('co')
   , MongoClient = require('mongodb-promisified')(Promise).MongoClient;
 ```
 
+## Not Supported functions
+
+Grid FS is not supported by this driver.
+
 ## Supported functions
 
 The promisified wrapper supports most of the functionality of the 2.0 drivers but not all of it.
