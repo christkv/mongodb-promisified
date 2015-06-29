@@ -4,8 +4,6 @@ var m = require('mongodb')
   , Cr = m.Cursor
   , M = m.MongoClient;
 
-console.dir(m)
-
 //
 // Exports a promise library, let's you pass your own promise library
 module.exports = function(promise) {
