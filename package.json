@@ -1,6 +1,6 @@
 {
   "name": "mongodb-promisified",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "mongodb-promisified wraps the mongodb 2.0.x driver and provides a promise based interface",
   "main": "index.js",
   "scripts": {
